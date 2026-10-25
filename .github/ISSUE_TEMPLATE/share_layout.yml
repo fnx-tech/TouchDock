@@ -1,0 +1,24 @@
+name: Share a layout
+description: A layout others may find useful (a tab for an app, a workflow, a language).
+labels: [layout]
+body:
+  - type: input
+    id: name
+    attributes:
+      label: Layout name and what it is for
+      placeholder: "Excel: navigation, fill down, insert row"
+    validations:
+      required: true
+  - type: textarea
+    id: layout
+    attributes:
+      label: The layout
+      description: Copy its section of layouts.txt, from the [Name] line down to the line before the next [Name].
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: picture
+    attributes:
+      label: Picture (optional)
+      description: A screenshot of the layout on screen.

@@ -1,0 +1,53 @@
+name: Bug report
+description: Something in TouchDock does not work as it should.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+      placeholder: "I held Backspace on the Keys tab; it deleted one letter instead of repeating."
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open the Keys tab
+        2. Touch and hold Backspace for 2 seconds
+    validations:
+      required: true
+  - type: dropdown
+    id: how
+    attributes:
+      label: How you were using it
+      options:
+        - On the PC itself (mouse / touchscreen)
+        - Over Remote Desktop from an iPad
+        - Over Remote Desktop from an Android tablet
+        - Over Remote Desktop from another PC
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Windows and TouchDock version
+      placeholder: "Windows 11 24H2, TouchDock v1.0 (exe) / AutoHotkey 2.0.19"
+    validations:
+      required: true
+  - type: dropdown
+    id: engine
+    attributes:
+      label: Dictation engine
+      options:
+        - Windows voice typing
+        - Handy
+        - Not related to dictation
+  - type: textarea
+    id: more
+    attributes:
+      label: Anything else
+      description: Screenshots, your layout (the section of layouts.txt), an error message.

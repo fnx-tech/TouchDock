@@ -8,3 +8,6 @@ tests/editor-copy.*
 tests/ini-before.ini
 tests/touch-log.txt
 zz-*.ahk
+
+# Release builds
+dist/

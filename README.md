@@ -42,9 +42,10 @@ and never takes the focus from the app you are typing in.
 ## Requirements
 
 1. Windows 10 or 11.
-2. [AutoHotkey v2](https://www.autohotkey.com/) (2.0 or newer).
-3. Optional: [Handy](https://github.com/cjpais/Handy) for offline dictation. Without it, use Windows voice
-   typing (right-click the mic > Dictation engine).
+2. [AutoHotkey v2](https://www.autohotkey.com/) (2.0 or newer), unless you use the ready-made `TouchDock.exe`
+   from the Releases page.
+3. Optional: [Handy](https://github.com/cjpais/Handy) for offline dictation. Without it, TouchDock uses
+   Windows voice typing automatically and hides the Handy menu items.
 4. For use from a tablet: the Microsoft Remote Desktop / Windows App on iPad or Android, in **Touch** mode.
 
 ## Install and run
@@ -53,7 +54,8 @@ and never takes the focus from the app you are typing in.
 2. Download this repository (Code > Download ZIP, or `git clone`) to a folder of your choice.
 3. Double-click `touchdock.ahk`. The mic and the grid appear at the bottom right of the screen.
 4. Right-click the mic for the menu. "Start with Windows" adds it to your startup programs.
-5. If you do not use Handy: right-click the mic > Dictation engine > Windows voice typing.
+5. Handy is detected automatically. If it is not installed, Windows voice typing is used; install Handy
+   later and restart TouchDock to get the Handy items.
 
 ## Using it
 
@@ -63,7 +65,7 @@ and never takes the focus from the app you are typing in.
    The previous layouts file is kept as `layouts.bak`.
 4. **By hand:** menu > "Edit layout (text file)". The notes at the top of `layouts.txt` explain every option.
 5. **Touchpad speed:** menu > Touchpad speed > Slow / Normal / Fast.
-6. **If something looks wrong:** tray icon > Restart button.
+6. **If something looks wrong:** right-click menu or tray icon > Restart TouchDock.
 
 ## Known limits
 

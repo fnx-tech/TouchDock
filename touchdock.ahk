@@ -32,7 +32,9 @@ Opacity   := Integer(IniRead(IniFile, "look", "opacity", "100"))
 KeySounds := IniRead(IniFile, "look", "sounds", "1") = "1"
 LayoutName := IniRead(IniFile, "look", "layout", "")
 Hidden    := IniRead(IniFile, "look", "hidden", "0") = "1"
-Engine    := IniRead(IniFile, "engine", "name", "handy")
+HandyInstalled := FileExist(HandyExe) != ""
+; Without Handy the Handy-only items are hidden and Windows voice typing is used, whatever was saved.
+Engine    := HandyInstalled ? IniRead(IniFile, "engine", "name", "handy") : "windows"
 ShowBar   := IniRead(IniFile, "look", "editbar", "1") = "1"
 
 ; Edit buttons around the mic button, one per line of layouts.txt (format in that file).
@@ -100,14 +102,17 @@ FillMenu(m) {
     m.Add("Start / stop dictation", (*) => Toggle())
     global EngineMenu := Menu()
     for key, label in Engines
-        EngineMenu.Add(label, PickEngine)
+        if (HandyInstalled || key != "handy")
+            EngineMenu.Add(label, PickEngine)
     m.Add("Dictation engine", EngineMenu)
     m.Add()
-    ModelMenu := Menu()
-    for name in Models
-        ModelMenu.Add(name, SwitchModel)
-    m.Add("Model", ModelMenu)
-    m.Add()
+    if HandyInstalled {
+        ModelMenu := Menu()
+        for name in Models
+            ModelMenu.Add(name, SwitchModel)
+        m.Add("Model", ModelMenu)
+        m.Add()
+    }
     SizeMenu := Menu()
     for name in SizeNames
         SizeMenu.Add(name, PickSize)
@@ -127,11 +132,13 @@ FillMenu(m) {
     m.Add(HideLabel, (*) => ToggleHidden())
     m.Add("Move to corner " Chr(0x2198), (*) => ResetPos())
     m.Add()
-    m.Add("Open Handy", (*) => OpenHandy())
-    m.Add(HandyLabel, (*) => RestartHandy())
+    if HandyInstalled {
+        m.Add("Open Handy", (*) => OpenHandy())
+        m.Add(HandyLabel, (*) => RestartHandy())
+    }
     m.Add("Start with Windows", (*) => ToggleStartup())
     m.Add()
-    m.Add("Restart button", (*) => Reload())
+    m.Add("Restart TouchDock", (*) => Reload())
     m.Add("Exit", (*) => ExitApp())
 }
 
@@ -141,10 +148,13 @@ RefreshChecks() {
     for name in SizeNames
         (name = SizeName) ? SizeMenu.Check(name) : SizeMenu.Uncheck(name)
     for key, label in Engines
-        (key = Engine) ? EngineMenu.Check(label) : EngineMenu.Uncheck(label)
-    current := CurrentModel()
-    for name, id in Models
-        (id = current) ? ModelMenu.Check(name) : ModelMenu.Uncheck(name)
+        if (HandyInstalled || key != "handy")
+            (key = Engine) ? EngineMenu.Check(label) : EngineMenu.Uncheck(label)
+    if HandyInstalled {
+        current := CurrentModel()
+        for name, id in Models
+            (id = current) ? ModelMenu.Check(name) : ModelMenu.Uncheck(name)
+    }
     for pct in Opacities
         (pct = Opacity) ? OpacityMenu.Check(pct "%") : OpacityMenu.Uncheck(pct "%")
     for name in ["Slow", "Normal", "Fast"]
@@ -154,9 +164,11 @@ RefreshChecks() {
     want := Hidden ? "Show button" : "Hide button"
     if (want != HideLabel)
         m.Rename(HideLabel, want), HideLabel := want
-    want := HandyRunning() ? "Restart Handy" : "Start Handy"
-    if (want != HandyLabel)
-        m.Rename(HandyLabel, want), HandyLabel := want
+    if HandyInstalled {
+        want := HandyRunning() ? "Restart Handy" : "Start Handy"
+        if (want != HandyLabel)
+            m.Rename(HandyLabel, want), HandyLabel := want
+    }
     FileExist(StartupLink) ? m.Check("Start with Windows") : m.Uncheck("Start with Windows")
 }
 
@@ -188,7 +200,8 @@ PanelItems(page) {
     if (page = "main") {
         items.Push(["Start / stop dictation", Toggle])
         items.Push(["Dictation engine:  " Engines[Engine] "   " Chr(0x203A), () => ShowPanel("engine")])
-        items.Push(["Model   " Chr(0x203A), () => ShowPanel("model")])
+        if HandyInstalled
+            items.Push(["Model   " Chr(0x203A), () => ShowPanel("model")])
         items.Push(["Size:  " SizeName "   " Chr(0x203A), () => ShowPanel("size")])
         items.Push(["-"])
         items.Push(["Opacity:  " Opacity "%   " Chr(0x203A), () => ShowPanel("opacity")])
@@ -200,10 +213,13 @@ PanelItems(page) {
         items.Push([Hidden ? "Show button" : "Hide button", ToggleHidden])
         items.Push(["Move to corner " Chr(0x2198), ResetPos])
         items.Push(["-"])
-        items.Push(["Open Handy", OpenHandy])
-        items.Push([HandyRunning() ? "Restart Handy" : "Start Handy", RestartHandy])
+        if HandyInstalled {
+            items.Push(["Open Handy", OpenHandy])
+            items.Push([HandyRunning() ? "Restart Handy" : "Start Handy", RestartHandy])
+        }
         items.Push([Tick(FileExist(StartupLink)) "Start with Windows", ToggleStartup])
         items.Push(["-"])
+        items.Push(["Restart TouchDock", () => Reload()])
         items.Push(["Exit", () => ExitApp()])
         return items
     }
@@ -212,7 +228,8 @@ PanelItems(page) {
     ; Braces needed: a loop directly followed by "else" takes that else as its own (runs when the loop is empty).
     if (page = "engine") {
         for key, label in Engines
-            items.Push([Tick(key = Engine) label, PickEngine.Bind(label)])
+            if (HandyInstalled || key != "handy")
+                items.Push([Tick(key = Engine) label, PickEngine.Bind(label)])
     } else if (page = "model") {
         current := CurrentModel()
         for name, id in Models
@@ -594,7 +611,7 @@ ToggleStartup() {
     if FileExist(StartupLink)
         FileDelete(StartupLink)
     else
-        FileCreateShortcut(A_AhkPath, StartupLink, A_ScriptDir, '"' A_ScriptFullPath '"')
+        FileCreateShortcut(A_IsCompiled ? A_ScriptFullPath : A_AhkPath, StartupLink, A_ScriptDir, A_IsCompiled ? "" : '"' A_ScriptFullPath '"')
 }
 
 #Include %A_ScriptDir%\layouts.ahk
