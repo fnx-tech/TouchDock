@@ -42,19 +42,32 @@ and never takes the focus from the app you are typing in.
 ## Requirements
 
 1. Windows 10 or 11.
-2. [AutoHotkey v2](https://www.autohotkey.com/) (2.0 or newer), unless you use the ready-made `TouchDock.exe`
-   from the Releases page.
+2. [AutoHotkey v2](https://www.autohotkey.com/) (2.0 or newer), only if you run the scripts from this repository;
+   the installer and the portable zip from the Releases page need nothing else.
 3. Optional: [Handy](https://github.com/cjpais/Handy) for offline dictation. Without it, TouchDock uses
    Windows voice typing automatically and hides the Handy menu items.
 4. For use from a tablet: the Microsoft Remote Desktop / Windows App on iPad or Android, in **Touch** mode.
 
 ## Install and run
 
-1. Install AutoHotkey v2.
-2. Download this repository (Code > Download ZIP, or `git clone`) to a folder of your choice.
-3. Double-click `touchdock.ahk`. The mic and the grid appear at the bottom right of the screen.
-4. Right-click the mic for the menu. "Start with Windows" adds it to your startup programs.
-5. Handy is detected automatically. If it is not installed, Windows voice typing is used; install Handy
+Pick one of the two downloads on the Releases page:
+
+1. **Installer** (`TouchDock-v1.0-setup.exe`): run it, accept the Windows permission prompt, and tick
+   "Start with Windows" if you want it. Your layouts and settings go to `%APPDATA%\TouchDock`; upgrading or
+   uninstalling keeps them.
+2. **Portable** (`TouchDock-v1.0-portable.zip`): unzip it into a folder you can write to and run `TouchDock.exe`.
+   Keep the empty `portable` file next to it: your layouts and settings are then kept in that same folder.
+3. **From source:** install AutoHotkey v2, download this repository (Code > Download ZIP, or `git clone`) and
+   double-click `touchdock.ahk`. Files are kept in the repository folder.
+
+Windows may warn that the downloads are from an unknown publisher (they are not code-signed). Click
+"More info", then "Run anyway".
+
+Then:
+
+1. The mic and the grid appear at the bottom right of the screen.
+2. Right-click the mic for the menu. "Start with Windows" adds it to your startup programs.
+3. Handy is detected automatically. If it is not installed, Windows voice typing is used; install Handy
    later and restart TouchDock to get the Handy items.
 
 ## Using it
@@ -85,10 +98,12 @@ and never takes the focus from the app you are typing in.
 | `touchpad.ahk` | the touchpad and its pointer |
 | `layouts.txt` | the layouts (edit on screen or by hand) |
 | `click.wav` | the key click |
+| `installer\`, `build\` | the installer script and the script that builds the release files |
 | `tests\` | test scripts (see [CONTRIBUTING.md](CONTRIBUTING.md)) |
 
 Your own settings (`touchdock.ini`) and editor backup (`layouts.bak`) are created
-next to the program and are not part of the repository.
+in the data folder (the repository folder from source, the exe folder for the portable zip, `%APPDATA%\TouchDock`
+when installed) and are not part of the repository.
 
 ## Contributing
 

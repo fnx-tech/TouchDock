@@ -25,6 +25,13 @@ Paste the layout's section of `layouts.txt` (from its `[Name]` line down) in an 
    not count as physical while TouchDock's mouse hook is on.
 4. Comments say why, not what: a limit from Windows or Remote Desktop, or what breaks if a line changes.
 
+## Building the release files
+
+`build/build.sh` (from WSL, on the Windows PC) compiles `dist\TouchDock.exe` with Ahk2Exe and writes
+`dist\TouchDock-v<version>-portable.zip` and `dist\TouchDock-v<version>-setup.exe`. It needs AutoHotkey v2 with
+Ahk2Exe and Inno Setup 6. The installer is `installer\touchdock.iss`; the version is set there. The exe carries
+`layouts.txt` and `click.wav` (FileInstall) and writes them to its data folder when missing.
+
 ## Tests
 
 The scripts in `tests\` run from WSL (bash) on the Windows PC where TouchDock runs:

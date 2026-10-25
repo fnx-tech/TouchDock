@@ -4,7 +4,17 @@
 
 HandyExe     := EnvGet("LOCALAPPDATA") "\Handy\handy.exe"
 HandySettings := EnvGet("APPDATA") "\com.pais.handy\settings_store.json"
-IniFile      := A_ScriptDir "\touchdock.ini"
+; Where touchdock.ini, layouts.txt, layouts.bak and click.wav live: the script folder when run from source or
+; next to a "portable" file, else the user's AppData (installed in Program Files, which is not writable).
+DataDir := (!A_IsCompiled || FileExist(A_ScriptDir "\portable")) ? A_ScriptDir : EnvGet("APPDATA") "\TouchDock"
+DirCreate(DataDir)
+if A_IsCompiled {  ; the exe carries its starting files; a user's own copy is never overwritten
+    if !FileExist(DataDir "\layouts.txt")
+        FileInstall("layouts.txt", DataDir "\layouts.txt")
+    if !FileExist(DataDir "\click.wav")
+        FileInstall("click.wav", DataDir "\click.wav")
+}
+IniFile      := DataDir "\touchdock.ini"
 StartupLink  := A_Startup "\TouchDock.lnk"
 
 ; Values are Handy's "selected_model" ids: <catalog repo>/<file name>.
@@ -38,8 +48,8 @@ Engine    := HandyInstalled ? IniRead(IniFile, "engine", "name", "handy") : "win
 ShowBar   := IniRead(IniFile, "look", "editbar", "1") = "1"
 
 ; Edit buttons around the mic button, one per line of layouts.txt (format in that file).
-ButtonsFile := A_ScriptDir "\layouts.txt"
-ClickSound := A_ScriptDir "\click.wav"
+ButtonsFile := DataDir "\layouts.txt"
+ClickSound := DataDir "\click.wav"
 TileColor := "333333", TilePressed := "1C5FC4", EnterColor := "1F4E8C"
 Bar := "", BarW := 0, BarH := 0, BarIcons := [], MicAt := "", MicW := 0, MicH := 0, ButtonsTime := "", NextKey := ""
 EditMode := false, EditLayouts := "", EditUndo := [], EditPos := "", EditStartLayout := "", EditBox := "", Picker := ""
@@ -50,7 +60,7 @@ PadSpeed := IniRead(IniFile, "look", "padspeed", "Normal")
 if !PadSpeeds.Has(PadSpeed)
     PadSpeed := "Normal"
 LastRefusal := ""   ; what the editor last refused, as shown in its tooltip
-BackupFile := A_ScriptDir "\layouts.bak"
+BackupFile := DataDir "\layouts.bak"
 G := ""            ; grid geometry of the last build: {s, gap, top, pt}
 TouchHeld := false  ; a finger is still on the tile it pressed (touchpad.ahk)
 TileOf := Map()    ; tile control hwnd -> [button, its controls, its colour]

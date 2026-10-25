@@ -10,7 +10,7 @@ LoadButtons() {
         ButtonsTime := FileGetTime(ButtonsFile, "M")
         text := FileRead(ButtonsFile, "UTF-8")
     } catch {
-        TrayTip("No layouts.txt next to the script", "TouchDock")
+        TrayTip("No layouts.txt found", "TouchDock")
         return layouts
     }
     for n, line in StrSplit(text, "`n", "`r") {
