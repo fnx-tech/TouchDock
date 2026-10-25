@@ -1,0 +1,10 @@
+# Each user's own settings, log and editor backup (created on first run / first save)
+touchdock.ini
+layouts.bak
+
+# Test leftovers
+tests/out/
+tests/editor-copy.*
+tests/ini-before.ini
+tests/touch-log.txt
+zz-*.ahk

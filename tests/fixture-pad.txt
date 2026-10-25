@@ -1,0 +1,4 @@
+[P]
+grid = 6 x 3
+Touchpad | touchpad | at 1,1 | size 4x3
+Mic | mic | at 5,2

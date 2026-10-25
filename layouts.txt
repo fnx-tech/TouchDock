@@ -1,0 +1,85 @@
+# The keys grid around the mic button. Easiest: right-click the mic > "Edit layout (drag and drop)".
+# Or edit this file by hand: save it and the buttons change at once.
+#
+# Each [Name] line starts a layout; tabs on top of the grid switch between them.
+#   grid = 5 x 4              columns x rows of the layout below it
+#   columns = 5               columns only; rows grow as needed (before the first [Name]: for every layout)
+#   -                         a line with just - ends the current row early (for buttons without "at")
+#
+# One button per line:
+#   Label | keys | the keys to press        several in a row: separate with spaces, e.g.  {Home} +{End} ^c
+#   Label | text | text to type
+#   Label | open | program, folder, file or web address   (a program's or file's own icon is shown)
+#   Label | hold | Ctrl  or  Shift  or  Alt  stays held for your next key or click; tap again to let go
+#                                         add "sticky" to keep it held until tapped again
+#   Mic   | mic                       the mic button, 2 x 2 unless a size says otherwise
+#                                     (no Mic line: one extra column, the mic at the bottom right)
+#   Touchpad | touchpad              a touchpad: slide = move the pointer, tap = click, two-finger tap or
+#                                    hold = right click, tap then slide = drag (2 x 2 unless a size says otherwise)
+# Then, in any order, any of:
+#   E8C8                      an icon from the Segoe Fluent Icons font, as its 4-character code
+#   at 3,2                    column 3, row 2, counted from 1 at the top left; without it: the next free spot
+#   size 2x1                  2 spots wide, 1 tall (default 1x1)
+#   repeat on / repeat off    whether holding the button repeats it; without it, single keys like arrows repeat
+# The label may be left empty when there is an icon:   | keys | {Up} | E74A
+# Key names: ^ Ctrl  + Shift  ! Alt  # Win   {Enter} {Tab} {Esc} {Del} {BS} {Home} {End} {PgUp} {PgDn}
+#            {Up} {Down} {Left} {Right} {F1}..{F12} {Space}
+# Folders and files: %USERPROFILE%, %LOCALAPPDATA% and other Windows variables work.
+# Lines starting with # are notes. The editor keeps this block and rewrites everything below it;
+# the file before its last save is kept as layouts.bak.
+
+[Edit]
+grid = 6 x 3
+Cut        | keys | ^x | E8C6 | at 1,1
+Copy       | keys | ^c | E8C8 | at 2,1
+Paste      | keys | ^v | E77F | at 3,1
+Select all | keys | ^a | E8B3 | at 4,1
+Clips      | keys | ^!v | E81C | at 5,1
+Enter      | keys | {Enter} | E751 | at 6,1
+Esc        | keys | {Esc} | at 1,2
+           | keys | {Up} | E74A | at 2,2
+Backspace  | keys | {BS} | E750 | at 3,2
+Mic        | mic | at 5,2 | size 2x2
+           | keys | {Left} | E72B | at 1,3
+           | keys | {Down} | E74B | at 2,3
+           | keys | {Right} | E72A | at 3,3
+
+[Keys]
+grid = 6 x 3
+Ctrl       | hold | Ctrl | at 1,1 | sticky
+Shift      | hold | Shift | at 2,1 | sticky
+Alt        | hold | Alt | at 3,1 | sticky
+Delete     | keys | {Del} | at 4,1
+Tab        | keys | {Tab} | at 5,1
+Enter      | keys | {Enter} | E751 | at 6,1
+Esc        | keys | {Esc} | at 1,2
+           | keys | {Up} | E74A | at 2,2
+Backspace  | keys | {BS} | E750 | at 3,2
+Mic        | mic | at 5,2 | size 2x2
+           | keys | {Left} | E72B | at 1,3
+           | keys | {Down} | E74B | at 2,3
+           | keys | {Right} | E72A | at 3,3
+
+[Shortcuts]
+grid = 6 x 3
+Reopen tab | keys | ^+t | at 1,1
+Find       | keys | ^f | E721 | at 2,1
+Undo       | keys | ^z | E7A7 | at 3,1
+Redo       | keys | ^y | E7A6 | at 4,1
+Snip       | keys | #+s | at 5,1
+Enter      | keys | {Enter} | E751 | at 6,1
+New tab    | keys | ^t | E710 | at 1,2
+Save       | keys | ^s | E74E | at 2,2
+Zoom out   | keys | ^- | E71F | at 3,2
+Zoom in    | keys | ^= | E8A3 | at 4,2
+Mic        | mic | at 5,2 | size 2x2
+Close tab  | keys | ^w | E711 | at 1,3
+Close app  | keys | !{F4} | at 2,3
+Task manager | open | %WINDIR%\System32\Taskmgr.exe | at 3,3
+Explorer   | open | C:\Windows\explorer.exe | at 4,3
+
+[Touchpad]
+grid = 6 x 3
+Touchpad   | touchpad | at 1,1 | size 4x3
+Enter      | keys | {Enter} | E751 | at 6,1
+Mic        | mic | at 5,2 | size 2x2

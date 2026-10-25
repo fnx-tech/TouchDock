@@ -1,0 +1,15 @@
+[A]
+grid = 4 x 3
+Wide       | keys | ^c | at 1,1 | size 2x1
+Tall       | keys | ^v | E77F | at 4,1 | size 1x2 | repeat off
+Sig        | text | Best regards | at 3,1
+Mic        | mic | at 1,2
+Flow1      | keys | a
+Flow2      | keys | b
+Flow3      | keys | c
+TooBig     | keys | d | size 5x1
+Bad        | nope | x
+[B]
+columns = 3
+X          | keys | x
+Y          | keys | y | repeat on

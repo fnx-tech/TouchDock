@@ -1,0 +1,89 @@
+# Edit buttons around the mic button. Save the file and the buttons change at once.
+#
+# Each [Name] line starts a layout; with more than one, tabs on top of the grid switch between them.
+# The buttons sit on a grid, filled left to right, top to bottom, in the order of the lines below.
+#   columns = 5               how many buttons per row (before the first [Name]: for every layout)
+#   (no Mic line)             one extra column on the right; the round mic takes the bottom 2 x 2 of the last two columns
+#   Mic | mic                 or: the mic takes a 2 x 2 block where this line falls in the order
+#   -                         a line with just - ends the current row early
+#
+# One button per line:
+#   Label | keys | the keys to press        several in a row: separate with spaces, e.g.  {Home} +{End} ^c
+#   Label | open | program, folder, file or web address   (a program's or file's own icon is shown)
+#   Label | hold | Ctrl  or  Shift  or  Alt  stays held for your next key or click; tap again to let go
+#
+# Optional 4th part on a "keys" line: an icon from the Segoe Fluent Icons font, as its 4-digit code (e.g. E8C8).
+# The label may be left empty when there is an icon:   | keys | {Up} | E74A
+# Holding a button that presses one key without Ctrl/Shift/Alt/Win (arrows, Backspace...) repeats it.
+# Key names: ^ Ctrl  + Shift  ! Alt  # Win   {Enter} {Tab} {Esc} {Del} {BS} {Home} {End} {PgUp} {PgDn}
+#            {Up} {Down} {Left} {Right} {F1}..{F12} {Space}
+# Folders and files: %USERPROFILE%, %LOCALAPPDATA% and other Windows variables work.
+# Lines starting with # are notes.
+
+columns = 5
+
+[Edit]
+Cut        | keys | ^x      | E8C6
+Copy       | keys | ^c      | E8C8
+Paste      | keys | ^v      | E77F
+Clips      | keys | ^!v     | E81C
+Backspace  | keys | {BS}    | E750
+
+Ctrl       | hold | Ctrl
+Shift      | hold | Shift
+Alt        | hold | Alt
+Delete     | keys | {Del}
+Enter      | keys | {Enter} | E751
+
+Esc        | keys | {Esc}
+           | keys | {Up}    | E74A
+Select all | keys | ^a      | E8B3
+-
+
+           | keys | {Left}  | E72B
+           | keys | {Down}  | E74B
+           | keys | {Right} | E72A
+
+[Keys]
+Esc        | keys | {Esc}
+Tab        | keys | {Tab}
+Home       | keys | {Home}
+End        | keys | {End}
+Backspace  | keys | {BS}    | E750
+
+Ctrl       | hold | Ctrl
+Shift      | hold | Shift
+Alt        | hold | Alt
+Delete     | keys | {Del}
+Enter      | keys | {Enter} | E751
+
+PgUp       | keys | {PgUp}
+           | keys | {Up}    | E74A
+PgDn       | keys | {PgDn}
+-
+
+           | keys | {Left}  | E72B
+           | keys | {Down}  | E74B
+           | keys | {Right} | E72A
+
+[Shortcuts]
+Save       | keys | ^s      | E74E
+Find       | keys | ^f      | E721
+Undo       | keys | ^z      | E7A7
+Redo       | keys | ^y      | E7A6
+Close tab  | keys | ^w      | E711
+
+New tab    | keys | ^t      | E710
+Reopen tab | keys | ^+t
+Switch app | keys | !{Tab}
+Desktop    | keys | #d
+Snip       | keys | #+s
+
+Rename     | keys | {F2}    | E8AC
+Refresh    | keys | {F5}    | E72C
+Close app  | keys | !{F4}
+-
+
+Explorer   | open | C:\Windows\explorer.exe
+Zoom in    | keys | ^=      | E8A3
+Zoom out   | keys | ^-      | E71F
