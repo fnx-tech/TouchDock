@@ -2,6 +2,7 @@
 #SingleInstance Force
 ; Floating mic button for Handy or Windows voice typing: click or Win+H = start/stop dictation, drag = move, right-click = menu.
 
+AppVersion   := "1.1"
 HandyExe     := EnvGet("LOCALAPPDATA") "\Handy\handy.exe"
 HandySettings := EnvGet("APPDATA") "\com.pais.handy\settings_store.json"
 ; Where touchdock.ini, layouts.txt, layouts.bak and click.wav live: the script folder when run from source or
@@ -86,6 +87,7 @@ SetState("idle")
 try LogPos := FileOpen(HandyLog, "r").Length
 SetTimer(WatchLog, 250)
 SetTimer(WatchButtonsFile, 1000)
+SetTimer(CheckUpdatesQuiet, -5000)  ; check for GitHub updates 5s after start (throttled to once a day)
 OnExit((*) => ReleaseLatched(true))
 
 OnMessage(0x201, OnLeftDown)        ; WM_LBUTTONDOWN
@@ -142,6 +144,7 @@ FillMenu(m) {
     m.Add(HideLabel, (*) => ToggleHidden())
     m.Add("Move to corner " Chr(0x2198), (*) => ResetPos())
     m.Add()
+    m.Add("Check for updates", (*) => CheckUpdatesManual())
     if HandyInstalled {
         m.Add("Open Handy", (*) => OpenHandy())
         m.Add(HandyLabel, (*) => RestartHandy())
@@ -223,6 +226,7 @@ PanelItems(page) {
         items.Push([Hidden ? "Show button" : "Hide button", ToggleHidden])
         items.Push(["Move to corner " Chr(0x2198), ResetPos])
         items.Push(["-"])
+        items.Push(["Check for updates", CheckUpdatesManual])
         if HandyInstalled {
             items.Push(["Open Handy", OpenHandy])
             items.Push([HandyRunning() ? "Restart Handy" : "Start Handy", RestartHandy])
@@ -630,3 +634,4 @@ ToggleStartup() {
 #Include %A_ScriptDir%\grid.ahk
 #Include %A_ScriptDir%\editor.ahk
 #Include %A_ScriptDir%\touchpad.ahk
+#Include %A_ScriptDir%\updater.ahk
