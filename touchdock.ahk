@@ -340,7 +340,9 @@ OnLeftDown(wParam, lParam, msg, hwnd) {
         }
         if (t[1].kind = "tab" && DragByTab())
             return 0
-        PressTile(t[1], t[2], t[3])
+        ; Its own thread: a press that is still sending or repeating would otherwise keep this handler busy,
+        ; and Windows' next click on a tile arriving meanwhile is dropped (one thread per message handler).
+        SetTimer(PressTile.Bind(t[1], t[2], t[3]), -1)
         return 0
     }
     if !IsOurs(hwnd)

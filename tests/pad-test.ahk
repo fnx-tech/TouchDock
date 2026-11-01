@@ -91,11 +91,17 @@ loop 16
 Touch([[0, px, py]], UP), Sleep(300)
 Check("touch and hold right-clicks (" rclicks ")", rclicks = 2)
 
-; 5. tap, then touch again and slide = button held while moving (the second press arrives as a double-click)
+; 5. tap, then touch again and slide = button held while moving: one press and one release (not a double-click)
 Sleep(400), MouseMove(150, 120, 0), Sleep(100)
 d0 := downs, c0 := clicks
 Tap(), Sleep(100)
 Slide(30, 20, 5)
 MouseGetPos(&x2, &y2)
-Check("tap then slide drags (downs " downs - d0 ", pointer moved " x2 - 150 "," y2 - 120 ")", downs - d0 = 2 && clicks - c0 = 2 && x2 > 150)
+Check("tap then slide drags (downs " downs - d0 ", ups " clicks - c0 ", pointer moved " x2 - 150 "," y2 - 120 ")", downs - d0 = 1 && clicks - c0 = 1 && x2 > 150)
+
+; 6. tap, tap = double-click
+Sleep(600), MouseMove(200, 150, 0), Sleep(100)
+d0 := downs, c0 := clicks
+Tap(), Sleep(50), Tap(), Sleep(300)
+Check("tap, tap double-clicks (downs " downs - d0 ", ups " clicks - c0 ")", downs - d0 = 2 && clicks - c0 = 2)
 ExitApp()

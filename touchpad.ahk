@@ -13,7 +13,7 @@ AddPad(x, y, w, h) {
 }
 
 PadState() {
-    static st := {ids: Map(), last: 0, first: 0, moved: 0, two: false, held: false, dragging: false, lastTap: 0, fx: 0.0, fy: 0.0}
+    static st := {ids: Map(), last: 0, first: 0, moved: 0, two: false, held: false, dragging: false, pending: false, fx: 0.0, fy: 0.0}
     return st
 }
 
@@ -43,9 +43,10 @@ OnPointer(wParam, lParam, msg, hwnd) {
             if !OnPad(x - bx, y - by)
                 return  ; the grid's background, not a pad
             st.first := id, st.moved := 0, st.two := false, st.held := false, st.fx := 0.0, st.fy := 0.0
-            ; Tap, then touch again soon: hold the button down and drag until the finger lifts.
-            if (A_TickCount - st.lastTap < 350)
-                Click("Down"), st.dragging := true
+            ; Tap, then touch again soon: the tap's button is still down (PadTapUp has not let it go yet), so it
+            ; stays down and drags until the finger lifts. A fresh press here would reach the app as a double-click.
+            if st.pending
+                SetTimer(PadTapUp, 0), st.pending := false, st.dragging := true
             SetTimer(PadHold, -600)
         } else
             st.two := true
@@ -83,15 +84,28 @@ OnPointer(wParam, lParam, msg, hwnd) {
     SetTimer(PadHold, 0)
     if st.dragging {
         Click("Up"), st.dragging := false
+        if (!st.two && st.moved <= 6)
+            Click()  ; tap, tap without sliding: a double-click
         ReleaseLatched()
     } else if (!st.held && st.two && st.moved <= 20) {
-        Click("Right"), st.lastTap := 0
+        Click("Right")
         ReleaseLatched()
     } else if (!st.held && !st.two && st.moved <= 6) {
-        Click(), st.lastTap := A_TickCount
-        ReleaseLatched()  ; the script's own clicks do not trigger the click that lets Ctrl/Shift/Alt go
+        ; A tap presses at once and lets go a moment later, so a second touch meanwhile can drag.
+        Click("Down"), st.pending := true
+        SetTimer(PadTapUp, -350)
     }
     return 0
+}
+
+; The tap's button, let go when no second touch came to drag.
+PadTapUp() {
+    st := PadState()
+    if !st.pending
+        return
+    st.pending := false
+    Click("Up")
+    ReleaseLatched()  ; the script's own clicks do not trigger the click that lets Ctrl/Shift/Alt go
 }
 
 ; One finger held still for 0.6 s: right click.
@@ -113,7 +127,7 @@ TileTouch(t, msg) {
         return
     if (msg = 0x246) {
         TouchHeld := true
-        SetTimer(PressTile.Bind(t[1], t[2], t[3]), -1)  ; its own thread, so the lift below can arrive meanwhile
+        SetTimer(PressTile.Bind(t[1], t[2], t[3], true), -1)  ; its own thread, so the lift below can arrive meanwhile
     } else if (msg = 0x247)
         TouchHeld := false
     return 0
@@ -156,19 +170,32 @@ PadArrowShow() {
     if !DllCall("IsWindowVisible", "Ptr", PadArrows()[1].Hwnd)
         for g in PadArrows()
             g.Show("NoActivate")
+    PadArrowRaise()
     SetTimer(PadArrowFollow, 10)
     SetTimer(PadArrowHide, -3000)  ; restarted by every touch on the pad
 }
 
+; Above every other always-on-top window: the grid and the mic rise when tapped, and Show alone does not lift
+; a window that is already showing. The outline first, so the white arrow ends on top of it.
+PadArrowRaise(x := "", y := "") {
+    flags := 0x13  ; SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE
+    if (x != "")
+        flags := 0x11  ; SWP_NOSIZE | SWP_NOACTIVATE: moved too, the arrow's tip on the pointer's spot
+    for g in PadArrows()
+        DllCall("SetWindowPos", "Ptr", g.Hwnd, "Ptr", -1, "Int", x = "" ? 0 : x, "Int", y = "" ? 0 : y, "Int", 0, "Int", 0, "UInt", flags)  ; HWND_TOPMOST
+}
+
 PadArrowFollow() {
-    static lx := "", ly := ""
+    static lx := "", ly := "", n := 0
     CoordMode("Mouse", "Screen")
     MouseGetPos(&x, &y)
-    if (x = lx && y = ly)
+    if (x = lx && y = ly) {
+        if (Mod(++n, 25) = 0)
+            PadArrowRaise()  ; still, but kept on top of windows that came up meanwhile
         return
+    }
     lx := x, ly := y
-    for g in PadArrows()
-        g.Move(x, y)  ; the arrow's tip on the pointer's spot
+    PadArrowRaise(x, y)
 }
 
 PadArrowHide() {

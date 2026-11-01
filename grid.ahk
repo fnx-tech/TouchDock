@@ -187,7 +187,8 @@ RenderMic() {
     MicPic.Value := "HBITMAP:" hbm  ; the control takes the bitmap and frees the previous one
 }
 
-PressTile(k, ctrls, color, *) {
+; touch: pressed by a finger (TileTouch), so the finger lifting ends the repeat, not the mouse button.
+PressTile(k, ctrls, color, touch := false, *) {
     if (KeySounds && FileExist(ClickSound))
         try SoundPlay(ClickSound)
     if (k.kind = "tab") {
@@ -229,7 +230,8 @@ PressTile(k, ctrls, color, *) {
         if (k.repeat = "on" || (k.repeat = "" && k.what ~= "^\{\w+\}$")) {
             start := A_TickCount, lastClick := 0
             Paint(ctrls, TilePressed)
-            while (TouchHeld || GetKeyState("LButton")) && A_TickCount - start < 20000 {
+            ; Each press watches only its own source: a finger lift that went missing must not keep a mouse press repeating.
+            while (touch ? TouchHeld : GetKeyState("LButton")) && A_TickCount - start < 20000 {
                 if (A_TickCount - start > 400) {
                     for step in StrSplit(k.what, " ", "`t")
                         if (step != "")
