@@ -11,3 +11,6 @@ zz-*.ahk
 
 # Release builds
 dist/
+
+# Working notes (reviews, scratch)
+docs/temp/

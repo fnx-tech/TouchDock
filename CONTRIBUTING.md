@@ -27,9 +27,9 @@ Paste the layout's section of `layouts.txt` (from its `[Name]` line down) in an 
 
 ## Building the release files
 
-`build/build.sh` (from WSL, on the Windows PC) compiles `dist\TouchDock.exe` with Ahk2Exe and writes
+`build/build.sh` (from WSL, on the Windows PC; `build/build.ps1` does the same from PowerShell) compiles `dist\TouchDock.exe` with Ahk2Exe and writes
 `dist\TouchDock-v<version>-portable.zip` and `dist\TouchDock-v<version>-setup.exe`. It needs AutoHotkey v2 with
-Ahk2Exe and Inno Setup 6. The installer is `installer\touchdock.iss`; the version is set there. The exe carries
+Ahk2Exe and Inno Setup 6. The installer is `installer\touchdock.iss`; the version is set there and in `AppVersion` at the top of `touchdock.ahk`, and the build stops if they differ. The exe carries
 `layouts.txt` and `click.wav` (FileInstall) and writes them to its data folder when missing.
 
 ## Tests

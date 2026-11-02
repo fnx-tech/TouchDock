@@ -17,6 +17,7 @@ if A_IsCompiled {  ; the exe carries its starting files; a user's own copy is ne
 }
 IniFile      := DataDir "\touchdock.ini"
 StartupLink  := A_Startup "\TouchDock.lnk"
+StartupCommonLink := A_StartupCommon "\TouchDock.lnk"  ; made by the installer's "Start with Windows" task
 
 ; Values are Handy's "selected_model" ids: <catalog repo>/<file name>.
 Models := Map(
@@ -34,12 +35,14 @@ Engines := Map("handy", "Handy (local)", "windows", "Windows voice typing")
 Opacities := [100, 90, 80, 70, 60, 50, 40, 30, 20, 10]
 State := "idle"         ; Handy's real state, read from its log: idle / recording / transcribing
 LastPress := 0
+StateSince := 0
 LogPos := 0
 
 SizeName  := IniRead(IniFile, "look", "size", "100%")
 if !Sizes.Has(SizeName)  ; a name from before the percentages, or a typo
     SizeName := "100%"
-Opacity   := Integer(IniRead(IniFile, "look", "opacity", "100"))
+Opacity   := IniRead(IniFile, "look", "opacity", "100")
+Opacity   := IsInteger(Opacity) ? Integer(Opacity) : 100
 KeySounds := IniRead(IniFile, "look", "sounds", "1") = "1"
 LayoutName := IniRead(IniFile, "look", "layout", "")
 Hidden    := IniRead(IniFile, "look", "hidden", "0") = "1"
@@ -82,6 +85,7 @@ FillMenu(A_TrayMenu)
 A_IconTip := "TouchDock"
 
 ApplySize(true)
+SetTimer(KeepOnScreen, -700)  ; the saved position may lie outside a smaller screen
 SetState("idle")
 
 try LogPos := FileOpen(HandyLog, "r").Length
@@ -182,7 +186,7 @@ RefreshChecks() {
         if (want != HandyLabel)
             m.Rename(HandyLabel, want), HandyLabel := want
     }
-    FileExist(StartupLink) ? m.Check("Start with Windows") : m.Uncheck("Start with Windows")
+    StartupOn() ? m.Check("Start with Windows") : m.Uncheck("Start with Windows")
 }
 
 ShowMenu() {
@@ -231,7 +235,7 @@ PanelItems(page) {
             items.Push(["Open Handy", OpenHandy])
             items.Push([HandyRunning() ? "Restart Handy" : "Start Handy", RestartHandy])
         }
-        items.Push([Tick(FileExist(StartupLink)) "Start with Windows", ToggleStartup])
+        items.Push([Tick(StartupOn()) "Start with Windows", ToggleStartup])
         items.Push(["-"])
         items.Push(["Restart TouchDock", () => Reload()])
         items.Push(["Exit", () => ExitApp()])
@@ -401,7 +405,8 @@ Toggle() {
         SendEvent("#h")
         return
     }
-    if (State = "transcribing" || A_TickCount - LastPress < 800)
+    ; A transcribing lock ends after 30 s or when Handy is gone, since only its log can clear it.
+    if ((State = "transcribing" && HandyRunning() && A_TickCount - StateSince < 30000) || A_TickCount - LastPress < 800)
         return
     LastPress := A_TickCount
     if !EnsureHandy()
@@ -411,7 +416,7 @@ Toggle() {
 }
 
 SetState(s) {
-    global State := s
+    global State := s, StateSince := A_TickCount
     Btn.BackColor := (Engine = "windows") ? Colors["windows"] : Colors[s]
     RenderMic()
     ApplyAlpha()
@@ -530,6 +535,7 @@ ResetPos() {
         ToggleHidden()
     Btn.Move(x, y)
     SavePos()
+    KeepOnScreen()  ; the grid around the mic may reach past the corner
 }
 
 ; Back to the saved position, pushed inside the current work area so the mic and its grid stay in view.
@@ -592,6 +598,11 @@ RestartHandy() {
     EnsureHandy()
 }
 
+ModelSettingFound() {
+    try return RegExMatch(FileRead(HandySettings, "UTF-8"), '"selected_model"\s*:\s*"[^"]*"')
+    return false
+}
+
 CurrentModel() {
     try text := FileRead(HandySettings, "UTF-8")
     catch
@@ -604,29 +615,43 @@ SwitchModel(name, *) {
     id := Models[name]
     if (id = CurrentModel())
         return
+    if !ModelSettingFound() {
+        MsgBox("Could not find the model setting in`n" HandySettings, "TouchDock", "Icon!")
+        return
+    }
     if HandyRunning() {
         ProcessClose("handy.exe")
         ProcessWaitClose("handy.exe", 10)
     }
-    text := FileRead(HandySettings, "UTF-8")
-    new := RegExReplace(text, '("selected_model"\s*:\s*")[^"]*(")', "${1}" id "${2}", &n, 1)
-    if (n != 1) {
-        MsgBox("Could not find the model setting in`n" HandySettings, "TouchDock", "Icon!")
+    ; Read again after the kill, and swapped in whole: a half-written settings file loses all of Handy's settings.
+    try {
+        text := FileRead(HandySettings, "UTF-8")
+        new := RegExReplace(text, '("selected_model"\s*:\s*")[^"]*(")', "${1}" id "${2}", &n, 1)
+        if (n != 1)
+            throw Error("model setting missing")
+        f := FileOpen(HandySettings ".tmp", "w", "UTF-8-RAW")
+        f.Write(new)
+        f.Close()
+        FileMove(HandySettings ".tmp", HandySettings, 1)
+    } catch {
+        MsgBox("Could not change the model setting in`n" HandySettings, "TouchDock", "Icon!")
         EnsureHandy()
         return
     }
-    f := FileOpen(HandySettings, "w", "UTF-8-RAW")
-    f.Write(new)
-    f.Close()
     SetState("idle")
     EnsureHandy()
     TrayTip("Model: " name, "TouchDock")
 }
 
+StartupOn() => FileExist(StartupLink) || FileExist(StartupCommonLink)
+
 ToggleStartup() {
-    if FileExist(StartupLink)
-        FileDelete(StartupLink)
-    else
+    if StartupOn() {
+        try FileDelete(StartupLink)
+        try FileDelete(StartupCommonLink)  ; fails without administrator rights
+        if StartupOn()
+            TrayTip("The startup entry for all users needs administrator rights to remove.", "TouchDock")
+    } else
         FileCreateShortcut(A_IsCompiled ? A_ScriptFullPath : A_AhkPath, StartupLink, A_ScriptDir, A_IsCompiled ? "" : '"' A_ScriptFullPath '"')
 }
 

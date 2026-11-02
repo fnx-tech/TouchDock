@@ -11,6 +11,7 @@ BuildBar() {
         Bar.Destroy(), Bar := ""
     for h in BarIcons
         DllCall("DestroyIcon", "Ptr", h)
+    PadReset()  ; a drag still in progress on the pad would keep the mouse button down
     BarIcons := [], MicAt := "", TileOf.Clear(), Pads.Length := 0
     if (!EditMode && (!ShowBar || Hidden)) {
         ShowEditBox(false)
@@ -36,12 +37,12 @@ BuildBar() {
     Bar.MarginX := 0, Bar.MarginY := 0
     if tabH {
         Bar.SetFont("s" Round(base * 0.15) " cWhite", "Segoe UI")
-        n := layouts.Length, tw := (BarW - (n + 1) * gap) // n
+        n := layouts.Length, tw := Max(1, (BarW - (n + 1) * gap) // n)
         for i, l in layouts {
             color := (l = cfg) ? TilePressed : TileColor
             x := gap + (i - 1) * (tw + gap)
-            w := (i = n) ? BarW - gap - x : tw
-            t := Bar.AddText("x" x " y" gap " w" w " h" tabH " Center +0x200 +0x100 Background" color, l.name)
+            w := Max(1, (i = n) ? BarW - gap - x : tw)
+            t := Bar.AddText("x" x " y" gap " w" w " h" tabH " Center +0x200 +0x100 +0x80 Background" color, l.name)
             TileOf[t.Hwnd] := [{kind: "tab", what: l.name, label: l.name}, [t], color]
         }
     }
@@ -68,6 +69,7 @@ BuildBar() {
     else
         ShapeBtn()
     PlaceBar()
+    KeepGridOnScreen()
     ; Rounded grid with a hole where the mic sits: tapping a tile lifts the grid above the mic,
     ; and the hole keeps it from covering the mic when that happens.
     rr := gap * 3
@@ -103,7 +105,7 @@ AddTile(disp, k, x, y, w, h, color) {
     }
     if (ctrls.Length && labH) {
         Bar.SetFont("s" Round(base * 0.12) " cDDDDDD", "Segoe UI")
-        ctrls.Push(Bar.AddText("x" x " y" y + h - labH " w" w " h" labH " Center Background" color, StrReplace(disp.label, " ", "`n", , , 1)))
+        ctrls.Push(Bar.AddText("x" x " y" y + h - labH " w" w " h" labH " Center +0x80 Background" color, StrReplace(disp.label, " ", "`n", , , 1)))
     } else if !ctrls.Length {
         pt := Round(base * 0.17 * big)
         Bar.SetFont("s" pt " cWhite", "Segoe UI")
@@ -113,9 +115,9 @@ AddTile(disp, k, x, y, w, h, color) {
             pad := Max(0, (h - 2 * Round(pt * A_ScreenDPI / 72 * 1.35)) // 2)
             if pad
                 ctrls.Push(Bar.AddText("x" x " y" y " w" w " h" pad " Background" color))
-            ctrls.Push(Bar.AddText("x" x " y" y + pad " w" w " h" h - pad " Center Background" color, StrReplace(disp.label, " ", "`n", , , 1)))
+            ctrls.Push(Bar.AddText("x" x " y" y + pad " w" w " h" h - pad " Center +0x80 Background" color, StrReplace(disp.label, " ", "`n", , , 1)))
         } else
-            ctrls.Push(Bar.AddText("x" x " y" y " w" w " h" h " Center +0x200 Background" color, disp.label))
+            ctrls.Push(Bar.AddText("x" x " y" y " w" w " h" h " Center +0x200 +0x80 Background" color, disp.label))
     }
     ; Pressed on mouse down (OnLeftDown), so holding a tile can repeat its key.
     for ctl in ctrls {
@@ -213,8 +215,10 @@ PressTile(k, ctrls, color, touch := false, *) {
         }
         return
     }
+    repeats := (k.kind = "keys") && (k.repeat = "on" || (k.repeat = "" && k.what ~= "^\{\w+\}$"))
     Paint(ctrls, TilePressed)
-    SetTimer(() => Paint(ctrls, color), -150)
+    if !repeats  ; a repeating tile is repainted when the finger lifts
+        SetTimer(() => Paint(ctrls, color), -150)
     if (k.kind = "open") {
         try Run(ExpandEnv(k.what))
         catch
@@ -227,7 +231,7 @@ PressTile(k, ctrls, color, touch := false, *) {
                 Send(step), Sleep(30)
         ; Held down, the keys repeat like a keyboard key. "repeat on/off" decides; without it, a single key with no
         ; Ctrl/Shift/Alt/Win (arrows, Backspace, Delete) repeats. A held Ctrl/Shift stays on meanwhile.
-        if (k.repeat = "on" || (k.repeat = "" && k.what ~= "^\{\w+\}$")) {
+        if repeats {
             start := A_TickCount, lastClick := 0
             Paint(ctrls, TilePressed)
             ; Each press watches only its own source: a finger lift that went missing must not keep a mouse press repeating.
@@ -310,14 +314,19 @@ ExpandEnv(s) {
     return StrGet(buf)
 }
 
+; seen: BuildBar does not read the file while the grid is off or hidden, and a deleted file has no time to match;
+; without it the grid would be rebuilt every second.
 WatchButtonsFile() {
+    static seen := ""
     if EditMode
         return
     try t := FileGetTime(ButtonsFile, "M")
     catch
         t := ""
-    if (t != ButtonsTime)
-        BuildBar()
+    if (t = "" || t = ButtonsTime || t = seen)
+        return
+    seen := t
+    BuildBar()
 }
 
 OpenButtonsFile() => Run('notepad.exe "' ButtonsFile '"')
@@ -341,6 +350,22 @@ PlaceBar() {
     x := (bx - BarW - gap >= l) ? bx - BarW - gap : bx + bw + gap
     y := Min(Max(by + bh // 2 - BarH // 2, t), b - BarH)
     Bar.Show("x" x " y" y " w" BarW " h" BarH " NoActivate")
+}
+
+; A layout whose mic sits elsewhere moves the grid around the mic: pull the mic back until the grid is on screen.
+; Only after a rebuild: PlaceBar also runs while the mic is dragged.
+KeepGridOnScreen() {
+    if (!MicAt || EditMode || !Bar)
+        return
+    WinGetPos(&gx, &gy, &gw, &gh, Bar)
+    MonitorGetWorkArea(MonitorAt(gx + gw // 2, gy + gh // 2), &l, &t, &r, &b)
+    dx := (gx < l) ? l - gx : (gx + gw > r && gw <= r - l) ? r - gx - gw : 0
+    dy := (gy < t) ? t - gy : (gy + gh > b && gh <= b - t) ? b - gy - gh : 0
+    if (dx || dy) {
+        WinGetPos(&bx, &by, , , Btn)
+        Btn.Move(bx + dx, by + dy)
+        PlaceBar()
+    }
 }
 
 ToggleBar() {

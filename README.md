@@ -52,10 +52,10 @@ and never takes the focus from the app you are typing in.
 
 Pick one of the two downloads on the Releases page:
 
-1. **Installer** (`TouchDock-v1.0-setup.exe`): run it, accept the Windows permission prompt, and tick
+1. **Installer** (`TouchDock-v1.1-setup.exe`): run it, accept the Windows permission prompt, and tick
    "Start with Windows" if you want it. Your layouts and settings go to `%APPDATA%\TouchDock`; upgrading or
    uninstalling keeps them.
-2. **Portable** (`TouchDock-v1.0-portable.zip`): unzip it into a folder you can write to and run `TouchDock.exe`.
+2. **Portable** (`TouchDock-v1.1-portable.zip`): unzip it into a folder you can write to and run `TouchDock.exe`.
    Keep the empty `portable` file next to it: your layouts and settings are then kept in that same folder.
 3. **From source:** install AutoHotkey v2, download this repository (Code > Download ZIP, or `git clone`) and
    double-click `touchdock.ahk`. Files are kept in the repository folder.
@@ -96,9 +96,10 @@ Then:
 | `grid.ahk` | draws the grid and presses the keys |
 | `editor.ahk` | the layout editor |
 | `touchpad.ahk` | the touchpad and its pointer |
+| `updater.ahk` | the daily and manual check for a new release (menu > Check for updates) |
 | `layouts.txt` | the layouts (edit on screen or by hand) |
 | `click.wav` | the key click |
-| `installer\`, `build\` | the installer script and the script that builds the release files |
+| `installer\`, `build\` | the installer script and the scripts (`build.sh`, `build.ps1`) that build the release files |
 | `tests\` | test scripts (see [CONTRIBUTING.md](CONTRIBUTING.md)) |
 
 Your own settings (`touchdock.ini`) and editor backup (`layouts.bak`) are created

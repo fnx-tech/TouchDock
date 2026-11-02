@@ -98,6 +98,17 @@ OnPointer(wParam, lParam, msg, hwnd) {
     return 0
 }
 
+; Lets go of a mouse button the pad still holds (a drag, or a tap waiting for its release) and forgets the fingers.
+PadReset() {
+    st := PadState()
+    SetTimer(PadHold, 0)
+    if (st.dragging || st.pending) {
+        SetTimer(PadTapUp, 0)
+        Click("Up")
+    }
+    st.dragging := false, st.pending := false, st.ids.Clear()
+}
+
 ; The tap's button, let go when no second touch came to drag.
 PadTapUp() {
     st := PadState()

@@ -16,11 +16,14 @@ OutputBaseFilename=TouchDock-v{#AppVersion}-setup
 UninstallDisplayIcon={app}\TouchDock.exe
 Compression=lzma2
 SolidCompression=yes
+ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 ; Admin by default (Program Files); /CURRENTUSER on the command line installs without a UAC prompt.
 PrivilegesRequired=admin
 PrivilegesRequiredOverridesAllowed=commandline
 CloseApplications=yes
+; The uninstaller also removes a per-user startup link, which is the elevating account's in an admin uninstall: best effort.
+UsedUserAreasWarning=no
 
 [Tasks]
 Name: "desktopicon"; Description: "Create a &desktop shortcut"; Flags: unchecked
@@ -36,8 +39,11 @@ Name: "{autodesktop}\TouchDock"; Filename: "{app}\TouchDock.exe"; Tasks: desktop
 ; All users in an admin install: {userstartup} would be the elevating account's, which may not be the person using it.
 Name: "{autostartup}\TouchDock"; Filename: "{app}\TouchDock.exe"; Tasks: startup
 
+[UninstallDelete]
+Type: files; Name: "{userstartup}\TouchDock.lnk"
+
 [Run]
-Filename: "{app}\TouchDock.exe"; Description: "Run TouchDock"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\TouchDock.exe"; Description: "Run TouchDock"; Flags: nowait postinstall skipifsilent runasoriginaluser
 
 [Code]
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);

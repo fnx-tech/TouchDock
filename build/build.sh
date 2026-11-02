@@ -10,6 +10,9 @@ AHKDIR="$LAD/Programs/AutoHotkey"
 ISCC="$LAD/Programs/Inno Setup 6/ISCC.exe"
 [ -f "$ISCC" ] || ISCC="/mnt/c/Program Files (x86)/Inno Setup 6/ISCC.exe"
 VERSION=$(sed -n 's/^#define AppVersion "\(.*\)"/\1/p' "$ROOT/installer/touchdock.iss" | tr -d '\r')
+[ -n "$VERSION" ] || { echo "No AppVersion in installer/touchdock.iss" >&2; exit 1; }
+AHKVERSION=$(sed -n 's/^AppVersion *:= *"\([^"]*\)".*/\1/p' "$ROOT/touchdock.ahk" | tr -d '\r')
+[ "$AHKVERSION" = "$VERSION" ] || { echo "Version mismatch: touchdock.ahk $AHKVERSION, touchdock.iss $VERSION" >&2; exit 1; }
 cd /mnt/c
 
 # Only the three outputs are cleared; release-notes.md stays.
@@ -22,13 +25,13 @@ rm -f "$ROOT/dist/TouchDock.exe" "$ROOT/dist/TouchDock-v$VERSION-portable.zip" "
 
 # The empty "portable" file next to the exe tells it to keep its files in its own folder.
 PT=$(mktemp -d)
-cp "$ROOT/dist/TouchDock.exe" "$PT/"
+cp "$ROOT/dist/TouchDock.exe" "$ROOT/LICENSE" "$PT/"
 : > "$PT/portable"
 python3 - "$PT" "$ROOT/dist/TouchDock-v$VERSION-portable.zip" <<'PY'
 import sys, zipfile
 src, out = sys.argv[1], sys.argv[2]
 with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
-    for n in ("TouchDock.exe", "portable"):
+    for n in ("TouchDock.exe", "portable", "LICENSE"):
         z.write(src + "/" + n, n)
 PY
 rm -rf "$PT"

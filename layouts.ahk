@@ -2,9 +2,11 @@
 
 ; Layouts of layouts.txt, each {name, cols, rows, items, off}. Every item has a spot (col, row, 0-based)
 ; and a size (w, h) in tiles; "off" holds buttons that did not fit the grid. Bad lines are skipped and named.
+; LoadSkipped counts the skipped lines and LoadNotes the notes below the top block:
+; WriteButtonsFile does not keep either.
 LoadButtons() {
-    global ButtonsTime
-    layouts := [], bad := [], cols := 4
+    global ButtonsTime, LoadSkipped := 0, LoadNotes := 0
+    layouts := [], bad := [], cols := 4, body := false
     cur := {name: "", cols: cols, rows: 0, items: [], off: []}
     try {
         ButtonsTime := FileGetTime(ButtonsFile, "M")
@@ -15,8 +17,14 @@ LoadButtons() {
     }
     for n, line in StrSplit(text, "`n", "`r") {
         line := Trim(line)
-        if (line = "" || SubStr(line, 1, 1) = "#")
+        if (line = "")
             continue
+        if (SubStr(line, 1, 1) = "#") {
+            if body
+                LoadNotes++
+            continue
+        }
+        body := true
         if RegExMatch(line, "^\[(.+)\]$", &m) {
             if (cur.name != "" || cur.items.Length)
                 layouts.Push(cur)
@@ -28,13 +36,13 @@ LoadButtons() {
             continue
         }
         if RegExMatch(line, "i)^columns\s*=\s*(\d+)$", &m) {
-            cur.cols := Max(1, Integer(m[1]))
+            cur.cols := Num(m[1])
             if (cur.name = "")  ; before the first [layout]: the default for every layout
                 cols := cur.cols
             continue
         }
         if RegExMatch(line, "i)^grid\s*=\s*(\d+)\s*x\s*(\d+)$", &m) {
-            cur.cols := Max(1, Integer(m[1])), cur.rows := Max(1, Integer(m[2]))
+            cur.cols := Num(m[1]), cur.rows := Num(m[2])
             continue
         }
         k := ParseButton(line)
@@ -45,15 +53,37 @@ LoadButtons() {
     }
     if (cur.name != "" || cur.items.Length)
         layouts.Push(cur)
+    LoadSkipped := bad.Length
     if bad.Length {
         s := ""
         for n in bad
             s .= (s = "" ? "" : ", ") n
         TrayTip("layouts.txt: skipped line " s, "TouchDock")
     }
+    NameLayouts(layouts)
     for l in layouts
         ResolveLayout(l)
     return layouts
+}
+
+; Counts above 200 are typos; a larger number would make ResolveLayout fill millions of spots.
+Num(s, lo := 1) => StrLen(s) > 3 ? 200 : Max(lo, Min(Integer(s), 200))
+
+; Buttons before the first [Name] get a name, and a repeated name gets " 2", " 3"... (a layout is picked by name).
+NameLayouts(layouts) {
+    seen := Map(), seen.CaseSense := false, renamed := ""
+    for l in layouts {
+        if (l.name = "")
+            l.name := "Main"
+        name := l.name, n := 1
+        while seen.Has(name)
+            n++, name := l.name " " n
+        if (name != l.name)
+            renamed .= (renamed = "" ? "" : ", ") l.name " > " name
+        seen[name] := true, l.name := name
+    }
+    if (renamed != "")
+        TrayTip("layouts.txt: same name twice, renamed: " renamed, "TouchDock")
 }
 
 ; Label | kind | what, then any of: an icon code, "at C,R", "size WxH", "repeat on/off".
@@ -78,9 +108,9 @@ ParseButton(line) {
         if (v ~= "i)^[0-9a-f]{4}$")
             k.icon := v
         else if RegExMatch(v, "i)^at\s+(\d+)\s*,\s*(\d+)$", &m)
-            k.col := Integer(m[1]) - 1, k.row := Integer(m[2]) - 1
+            k.col := Num(m[1], 0) - 1, k.row := Num(m[2], 0) - 1
         else if RegExMatch(v, "i)^size\s+(\d+)\s*x\s*(\d+)$", &m)
-            k.w := Max(1, Integer(m[1])), k.h := Max(1, Integer(m[2]))
+            k.w := Num(m[1]), k.h := Num(m[2])
         else if RegExMatch(v, "i)^repeat\s+(on|off)$", &m)
             k.repeat := StrLower(m[1])
         else if (kind = "hold" && v = "sticky")
@@ -170,7 +200,9 @@ ResolveLayout(l) {
                 off.RemoveAt(i)
             i--
         }
-        mic := {label: "Mic", kind: "mic", what: "", icon: "", col: -1, row: -1, w: 2, h: 2, repeat: ""}
+        mic := {label: "Mic", kind: "mic", what: "", icon: "", col: -1, row: -1, w: 2, h: 2, repeat: "", sticky: false}
+        if (rows && rows < 2)  ; the mic is 2 tall
+            rows := 2
         bottom := Max(rows ? rows : last, 2)
         cols += 1
         if !Free(cols - 2, bottom - 2, 2, 2)

@@ -3,7 +3,7 @@
 ; While editing, the mic button is hidden and drawn as a tile in the grid, and the grid stays at EditPos.
 
 StartEdit() {
-    global EditMode, EditLayouts, EditUndo, EditPos, EditStartLayout
+    global EditMode, EditLayouts, EditUndo, EditPos, EditStartLayout, EditDropped
     if EditMode
         return
     if Hidden
@@ -15,6 +15,7 @@ StartEdit() {
     WinGetPos(&x, &y, , , Bar)
     EditPos := [x, y], EditStartLayout := LayoutName
     EditLayouts := LoadButtons(), EditUndo := []
+    EditDropped := {lines: LoadSkipped, notes: LoadNotes}
     EditMode := true
     BuildBar()
 }
@@ -25,6 +26,13 @@ EditDone() {
         for k in l.off
             lost .= "`n   " l.name ":  " (k.label != "" ? k.label : k.what)
     if (lost != "" && Confirm("These buttons are off the grid and will be dropped:" lost "`n`nSave anyway?") != "Yes")
+        return
+    what := ""
+    if EditDropped.lines
+        what := EditDropped.lines " line(s) that could not be read"
+    if EditDropped.notes
+        what .= (what = "" ? "" : " and ") EditDropped.notes " note(s) below the top block"
+    if (what != "" && Confirm("layouts.txt has " what ". Saving drops them (the old file is kept as layouts.bak).`n`nSave anyway?") != "Yes")
         return
     WriteButtonsFile(EditLayouts, BackupFile)
     IniWrite(LayoutName, IniFile, "look", "layout")
@@ -118,6 +126,8 @@ SpotFree(l, c, r, w, h, except := "") {
 ; Onto free spots it moves; onto a button of the same size in exactly that spot, the two swap.
 MoveItem(k, c, r) {
     l := CurLayout()
+    if (c = k.col && r = k.row)
+        return BuildBar()
     if SpotFree(l, c, r, k.w, k.h, k) {
         PushUndo()
         k.col := c, k.row := r
@@ -179,11 +189,18 @@ ItemMenu(k) {
             items.Push(["Repeat when held:  " (k.repeat = "" ? "automatic" : k.repeat) "   " Chr(0x203A), () => ShowPanel(RepeatItems(k))])
     }
     items.Push(["Size:  " k.w " wide × " k.h " tall   " Chr(0x203A), () => ShowPanel(SizeItems(k))])
-    if (k.kind != "mic") {
+    if (k.kind != "mic" || MicCount(CurLayout()) > 1) {  ; a second Mic line in a hand-edited file
         items.Push(["-"])
         items.Push(["Remove", RemoveItem.Bind(k)])
     }
     ShowPanel(items)
+}
+
+MicCount(l) {
+    n := 0
+    for k in l.items
+        n += (k.kind = "mic")
+    return n
 }
 
 SizeItems(k) {
@@ -238,7 +255,9 @@ EditName(k) {
     v := Ask("Name on the button (leave empty for an icon-only button):", k.label, &ok)
     if !ok
         return
-    v := StrReplace(Trim(v), "|")
+    v := Trim(v)
+    if BadText(v, true)
+        return
     if (v = "" && k.icon = "" && k.kind != "open")
         return Refuse("Give it a name or an icon")
     SetField(k, "label", v)
@@ -248,13 +267,24 @@ EditWhat(k) {
     if (k.kind = "keys")
         v := Ask(KeysPrompt(), k.what, &ok, 210)
     else if (k.kind = "text")
-        v := Ask("Text to type:", k.what, &ok)
+        v := Ask("Text to type (spaces at the start and end are dropped):", k.what, &ok)
     else
         v := Ask("Program, file, folder or web address to open:", k.what, &ok)
-    v := StrReplace(Trim(v), "|")
-    if (!ok || v = "")
+    v := Trim(v)
+    if (!ok || v = "" || BadText(v))
         return
     SetField(k, "what", v)
+}
+
+; | separates the fields of a line in layouts.txt, and a name starting with # would read back as a note.
+BadText(v, isName := false) {
+    if InStr(v, "|")
+        Refuse("A | cannot be used here: it separates the fields in layouts.txt")
+    else if (isName && SubStr(v, 1, 1) = "#")
+        Refuse("A name cannot start with #: give it a name of its own")
+    else
+        return false
+    return true
 }
 
 KeysPrompt() => "Keys to press, in AutoHotkey names:`n^c = Ctrl+C     +{End} = Shift+End     !{Tab} = Alt+Tab     #d = Win+D`nSeveral in a row: separate them with spaces, e.g.  {Home} +{End}"
@@ -293,13 +323,13 @@ ResizeGrid(dc, dr, *) {
     BuildBar()
 }
 
-AskLayoutName(prompt, def := "") {
+AskLayoutName(prompt, def := "", renaming := "") {
     v := Ask(prompt, def, &ok)
     v := Trim(StrReplace(StrReplace(StrReplace(v, "[", ""), "]", ""), "|", ""))
     if (!ok || v = "")
         return ""
     for l in EditLayouts
-        if (l.name = v) {
+        if (l.name = v && l != renaming) {
             Refuse("There is already a layout called " v)
             return ""
         }
@@ -343,7 +373,7 @@ EditDuplicateLayout() {
 EditRenameLayout() {
     global LayoutName
     cur := CurLayout()
-    name := AskLayoutName("New name for " cur.name ":", cur.name)
+    name := AskLayoutName("New name for " cur.name ":", cur.name, cur)
     if (name = "")
         return
     PushUndo()
@@ -370,7 +400,7 @@ EditDeleteLayout() {
 }
 
 PushUndo() {
-    EditUndo.Push(CloneLayouts(EditLayouts))
+    EditUndo.Push({layouts: CloneLayouts(EditLayouts), name: LayoutName})
     if (EditUndo.Length > 50)
         EditUndo.RemoveAt(1)
 }
@@ -379,8 +409,9 @@ EditUndoStep() {
     global EditLayouts, LayoutName
     if !EditUndo.Length
         return Refuse("Nothing to undo")
-    EditLayouts := EditUndo.Pop()
-    LayoutName := CurLayout().name  ; the undone step may have renamed or removed the current layout
+    step := EditUndo.Pop()
+    EditLayouts := step.layouts, LayoutName := step.name
+    LayoutName := CurLayout().name  ; falls back to the first layout if that name is gone
     BuildBar()
 }
 
@@ -558,18 +589,22 @@ CustomButton(kind) {
     name := Ask("Name on the button:", "", &ok)
     if !ok
         return ""
-    name := StrReplace(Trim(name), "|")
+    name := Trim(name)
+    if BadText(name, true)
+        return ""
     if (kind = "keys")
         v := Ask(KeysPrompt(), "", &ok, 210)
     else if (kind = "text")
-        v := Ask("Text to type:", "", &ok)
+        v := Ask("Text to type (spaces at the start and end are dropped):", "", &ok)
     else
         v := Ask("Program, file, folder or web address to open:", "", &ok)
-    v := StrReplace(Trim(v), "|")
-    if (!ok || v = "")
+    v := Trim(v)
+    if (!ok || v = "" || BadText(v))
         return ""
     if (name = "")
         name := (kind = "open") ? Shorten(v) : v
+    if BadText(name, true)
+        return ""
     return {label: name, kind: kind, what: v, icon: "", col: -1, row: -1, w: 1, h: 1, repeat: ""}
 }
 

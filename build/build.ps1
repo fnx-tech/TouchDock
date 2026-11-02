@@ -12,6 +12,10 @@ if (-not $VersionMatch) {
     throw "Could not find AppVersion in $IssFile"
 }
 $Version = $VersionMatch.Matches[0].Groups[1].Value
+$AhkMatch = Select-String -Path (Join-Path $Root "touchdock.ahk") -Pattern '^AppVersion\s*:=\s*"([^"]*)"'
+if (-not $AhkMatch -or $AhkMatch.Matches[0].Groups[1].Value -ne $Version) {
+    throw "Version mismatch between touchdock.ahk and $IssFile"
+}
 Write-Host "Building TouchDock v$Version..." -ForegroundColor Cyan
 
 # Locate compiler and tools
@@ -53,7 +57,7 @@ if ($proc.ExitCode -ne 0 -or -not (Test-Path $OutExe)) {
 Write-Host "Packaging portable zip..."
 $TempPortable = Join-Path ([System.IO.Path]::GetTempPath()) ([System.Guid]::NewGuid().ToString())
 New-Item -ItemType Directory -Path $TempPortable | Out-Null
-Copy-Item -Path $OutExe -Destination $TempPortable
+Copy-Item -Path $OutExe, (Join-Path $Root "LICENSE") -Destination $TempPortable
 New-Item -ItemType File -Path (Join-Path $TempPortable "portable") | Out-Null
 
 $PortableZip = Join-Path $Dist "TouchDock-v$Version-portable.zip"

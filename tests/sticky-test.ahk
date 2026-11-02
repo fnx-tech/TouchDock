@@ -2,9 +2,15 @@
 #Include %A_ScriptDir%\lib.ahk
 ; sticky-test.ahk : on the Keys layout, taps the sticky Ctrl tile, then the Down-arrow tile twice, and checks Ctrl
 ; is still held; then taps Ctrl again and checks it is let go. Simulated finger taps; the session must be connected.
-SetTimer(() => (FileAppend("timeout`n", "*"), ExitApp()), -30000)
+SetTimer(() => (FileAppend("timeout`n", "*"), LetGo(), ExitApp()), -30000)
 Check(name, ok) => FileAppend((ok ? "ok    " : "FAIL  ") name "`n", "*")
 g := WinExist("TouchDock Grid")
+; The held Ctrl belongs to the running dock: if a check failed, tap the tile again so it is not left held.
+LetGo() {
+    global ctrl
+    if (IsSet(ctrl) && ctrl && GetKeyState("Ctrl"))
+        TapTile(ctrl)
+}
 Find(text) {
     for h in WinGetControlsHwnd(g)
         if (ControlGetText(h) = text)
@@ -22,6 +28,7 @@ DllCall("InitializeTouchInjection", "UInt", 1, "UInt", 3)
 ctrl := Find("Ctrl"), down := Find(Chr(0xE74B))
 if (!ctrl || !down) {
     FileAppend("the Keys layout is not showing`n", "*")
+    LetGo()
     ExitApp(1)
 }
 TapTile(ctrl)
@@ -30,4 +37,5 @@ TapTile(down), TapTile(down)
 Check("sticky Ctrl still held after two other keys", GetKeyState("Ctrl"))
 TapTile(ctrl)
 Check("tapping Ctrl again lets it go", !GetKeyState("Ctrl"))
+LetGo()
 ExitApp()
