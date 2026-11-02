@@ -2,7 +2,7 @@
 #SingleInstance Force
 ; Floating mic button for Handy or Windows voice typing: click or Win+H = start/stop dictation, drag = move, right-click = menu.
 
-AppVersion   := "1.1"
+AppVersion   := "1.2"
 HandyExe     := EnvGet("LOCALAPPDATA") "\Handy\handy.exe"
 HandySettings := EnvGet("APPDATA") "\com.pais.handy\settings_store.json"
 ; Where touchdock.ini, layouts.txt, layouts.bak and click.wav live (from source, the shipped default-layouts.txt too): the script folder when run from source or

@@ -52,10 +52,10 @@ and never takes the focus from the app you are typing in.
 
 Pick one of the two downloads on the Releases page:
 
-1. **Installer** (`TouchDock-v1.1-setup.exe`): run it, accept the Windows permission prompt, and tick
+1. **Installer** (`TouchDock-v1.2-setup.exe`): run it, accept the Windows permission prompt, and tick
    "Start with Windows" if you want it. Your layouts and settings go to `%APPDATA%\TouchDock`; upgrading or
    uninstalling keeps them.
-2. **Portable** (`TouchDock-v1.1-portable.zip`): unzip it into a folder you can write to and run `TouchDock.exe`.
+2. **Portable** (`TouchDock-v1.2-portable.zip`): unzip it into a folder you can write to and run `TouchDock.exe`.
    Keep the empty `portable` file next to it: your layouts and settings are then kept in that same folder.
 3. **From source:** install AutoHotkey v2, download this repository (Code > Download ZIP, or `git clone`) and
    double-click `touchdock.ahk`. Files are kept in the repository folder.

@@ -1,5 +1,5 @@
 ; Inno Setup 6 script. Build with build\build.sh; it needs dist\TouchDock.exe (compiled first).
-#define AppVersion "1.1"
+#define AppVersion "1.2"
 
 [Setup]
 AppId={{6F1C2B7E-4D3A-4B8E-9A52-7C0E5D1A3F64}
