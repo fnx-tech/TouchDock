@@ -42,7 +42,7 @@ CheckForUpdates(manual := false) {
             return
         }
         json := req.ResponseText
-        newTag := "", releaseUrl := "", setupUrl := "", zipUrl := ""
+        newTag := "", releaseUrl := "", setupUrl := "", zipUrl := "", shaUrl := ""
         if RegExMatch(json, '"tag_name":\s*"([^"]+)"', &mTag)
             newTag := mTag[1]
         if RegExMatch(json, '"html_url":\s*"([^"]+)"', &mUrl)
@@ -51,10 +51,18 @@ CheckForUpdates(manual := false) {
             setupUrl := mSetup[1]
         if RegExMatch(json, '"browser_download_url":\s*"([^"]+-portable\.zip)"', &mZip)
             zipUrl := mZip[1]
+        if RegExMatch(json, '"browser_download_url":\s*"([^"]+-setup\.exe\.sha256)"', &mSha)
+            shaUrl := mSha[1]
+        host := "https://github.com/fnx-tech/TouchDock/"
+        ; Nothing is downloaded and run from anywhere but this project's releases.
+        if (SubStr(setupUrl, 1, StrLen(host)) != host)
+            setupUrl := ""
+        if (SubStr(shaUrl, 1, StrLen(host)) != host)
+            shaUrl := ""
         
         cleanTag := LTrim(newTag, "vV ")
         if (cleanTag != "" && IsNewerVersion(cleanTag, AppVersion)) {
-            ShowUpdatePrompt(newTag, releaseUrl, setupUrl, zipUrl, manual)
+            ShowUpdatePrompt(newTag, releaseUrl, setupUrl, zipUrl, shaUrl, manual)
         } else if manual {
             MsgBox("TouchDock is up to date (version " AppVersion ").", "TouchDock Update", "Iconi")
         }
@@ -80,7 +88,7 @@ IsNewerVersion(remote, cur) {
     return false
 }
 
-ShowUpdatePrompt(newVer, releaseUrl, setupUrl, zipUrl, manual := true) {
+ShowUpdatePrompt(newVer, releaseUrl, setupUrl, zipUrl, shaUrl, manual := true) {
     g := Gui("+AlwaysOnTop -DPIScale", "TouchDock Update")
     g.BackColor := "202020"
     g.MarginX := 24, g.MarginY := 20
@@ -96,12 +104,12 @@ ShowUpdatePrompt(newVer, releaseUrl, setupUrl, zipUrl, manual := true) {
 
     b3.OnEvent("Click", (*) => g.Destroy())
     b2.OnEvent("Click", (*) => (Run(releaseUrl), g.Destroy()))
-    b1.OnEvent("Click", (*) => OnUpdateClicked(g, status, b1, b2, b3, newVer, releaseUrl, setupUrl, zipUrl))
+    b1.OnEvent("Click", (*) => OnUpdateClicked(g, status, b1, b2, b3, newVer, releaseUrl, setupUrl, zipUrl, shaUrl))
     ; The automatic check must not take the focus (or an Enter keystroke) from the app being typed in.
     g.Show(manual ? "" : "NoActivate")
 }
 
-OnUpdateClicked(g, status, b1, b2, b3, newVer, releaseUrl, setupUrl, zipUrl) {
+OnUpdateClicked(g, status, b1, b2, b3, newVer, releaseUrl, setupUrl, zipUrl, shaUrl) {
     isPortable := FileExist(A_ScriptDir "\portable")
     if (!A_IsCompiled || isPortable || setupUrl = "") {
         if (zipUrl != "")
@@ -114,17 +122,57 @@ OnUpdateClicked(g, status, b1, b2, b3, newVer, releaseUrl, setupUrl, zipUrl) {
     b1.Enabled := false, b2.Enabled := false, b3.Enabled := false
     status.Visible := true
     status.Text := "Downloading installer..."
-    SetTimer(() => RunDownload(g, status, b1, b2, b3, newVer, setupUrl), -50)
+    SetTimer(() => RunDownload(g, status, b1, b2, b3, newVer, setupUrl, shaUrl), -50)
 }
 
-RunDownload(g, status, b1, b2, b3, newVer, setupUrl) {
+; expected: the text of a .sha256 file, "<64 hex digits>  <file name>".
+ChecksumMatches(file, expected) {
+    if !RegExMatch(expected, "i)^\s*([0-9a-f]{64})\b", &m)
+        return false
+    actual := FileSha256(file)
+    return actual != "" && actual = StrLower(m[1])
+}
+
+; Windows' own certutil; "" when it fails.
+FileSha256(file) {
+    out := A_Temp "\TouchDock-hash.txt"
+    try FileDelete(out)
+    try RunWait(A_ComSpec ' /c ""certutil" -hashfile "' file '" SHA256 >"' out '" 2>&1"', , "Hide")
+    catch
+        return ""
+    try text := FileRead(out)
+    catch
+        return ""
+    try FileDelete(out)
+    for line in StrSplit(text, "`n", "`r") {
+        line := StrReplace(line, " ")
+        if RegExMatch(line, "i)^[0-9a-f]{64}$")
+            return StrLower(line)
+    }
+    return ""
+}
+
+RunDownload(g, status, b1, b2, b3, newVer, setupUrl, shaUrl) {
     tempExe := A_Temp "\TouchDock-" RegExReplace(newVer, "[^0-9A-Za-z.\-]", "_") "-setup.exe"
     try {
         if FileExist(tempExe)
             FileDelete(tempExe)
+        if (shaUrl = "")
+            throw Error("this release has no checksum file")
+        shaFile := tempExe ".sha256"
+        Download(shaUrl, shaFile)
+        expected := FileRead(shaFile)
+        FileDelete(shaFile)
         Download(setupUrl, tempExe)
     } catch as err {
-        status.Text := "Download failed: " err.Message
+        status.Text := "The installer was not downloaded: " err.Message ". Use Release Notes to get it by hand."
+        b1.Enabled := b2.Enabled := b3.Enabled := true
+        b3.Text := "Close"
+        return
+    }
+    if !ChecksumMatches(tempExe, expected) {
+        try FileDelete(tempExe)
+        status.Text := "The downloaded installer does not match its checksum, so it was not run. Try again later or use Release Notes."
         b1.Enabled := b2.Enabled := b3.Enabled := true
         b3.Text := "Close"
         return

@@ -37,4 +37,8 @@ PY
 rm -rf "$PT"
 
 "$ISCC" "$ROOTW\\installer\\touchdock.iss"
+# "<hash>  <file name>", which the updater checks the downloaded installer against; upload them with each release.
+for f in "TouchDock-v$VERSION-setup.exe" "TouchDock-v$VERSION-portable.zip"; do
+  (cd "$ROOT/dist" && sha256sum "$f" > "$f.sha256")
+done
 ls -l "$ROOT/dist"

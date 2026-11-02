@@ -28,22 +28,26 @@ BuildBar() {
     base := s * 96 / A_ScreenDPI
     ; The tab row picks the layout, and is a handle for dragging the grid.
     tabH := (layouts.Length > 1 || EditMode) ? Round(s * 0.5) : 0
-    top := tabH ? gap + tabH + gap : gap
-    G := {s: s, gap: gap, top: top, pt: base}  ; not "base": that name is every object's parent
-    BarW := cfg.cols * s + (cfg.cols + 1) * gap, BarH := top + cfg.rows * (s + gap)
+    BarW := cfg.cols * s + (cfg.cols + 1) * gap
+    tabLines := tabH ? TabRows(layouts, BarW, gap, s, Round(base * 0.15) * A_ScreenDPI / 72) : []
+    top := tabH ? gap + tabLines.Length * (tabH + gap) : gap
+    G := {s: s, gap: gap, top: top, pt: base, tabRows: tabLines.Length}  ; not "base": that name is every object's parent
+    BarH := top + cfg.rows * (s + gap)
 
     Bar := Gui("+AlwaysOnTop -Caption +ToolWindow -DPIScale +E0x08000000", "TouchDock Grid")
     Bar.BackColor := "1A1A1A"
     Bar.MarginX := 0, Bar.MarginY := 0
     if tabH {
         Bar.SetFont("s" Round(base * 0.15) " cWhite", "Segoe UI")
-        n := layouts.Length, tw := Max(1, (BarW - (n + 1) * gap) // n)
-        for i, l in layouts {
-            color := (l = cfg) ? TilePressed : TileColor
-            x := gap + (i - 1) * (tw + gap)
-            w := Max(1, (i = n) ? BarW - gap - x : tw)
-            t := Bar.AddText("x" x " y" gap " w" w " h" tabH " Center +0x200 +0x100 +0x80 Background" color, l.name)
-            TileOf[t.Hwnd] := [{kind: "tab", what: l.name, label: l.name}, [t], color]
+        for ri, row in tabLines {
+            x := gap
+            for tab in row {
+                l := layouts[tab[1]]
+                color := (l = cfg) ? TilePressed : TileColor
+                t := Bar.AddText("x" x " y" gap + (ri - 1) * (tabH + gap) " w" tab[2] " h" tabH " Center +0x200 +0x100 +0x80 Background" color, l.name)
+                TileOf[t.Hwnd] := [{kind: "tab", what: l.name, label: l.name}, [t], color]
+                x += tab[2] + gap
+            }
         }
     }
     if EditMode
@@ -126,6 +130,42 @@ AddTile(disp, k, x, y, w, h, color) {
         ; Touch over Remote Desktop: no press-and-hold right-click on tiles, or holding an arrow never repeats.
         DllCall("SetProp", "Ptr", ctl.Hwnd, "Str", "MicrosoftTabletPenServiceProperty", "Ptr", 1)  ; TABLET_DISABLE_PRESSANDHOLD
     }
+}
+
+; Tabs in rows of [layout number, width]: one row of equal tabs while the names fit, else rows of tabs that are
+; each at least as wide as their name (and one grid tile), every row stretched to the grid's width.
+TabRows(layouts, barW, gap, s, charPx) {
+    n := layouts.Length, room := barW - 2 * gap
+    need := []
+    for l in layouts
+        need.Push(Min(room, Max(s, Round(StrLen(l.name) * charPx * 0.7) + 2 * gap)))
+    tw := (barW - (n + 1) * gap) // n, fit := true
+    for w in need
+        fit := fit && w <= tw
+    rows := []
+    if fit {
+        row := []
+        loop n
+            row.Push([A_Index, (A_Index = n) ? barW - gap - (gap + (n - 1) * (tw + gap)) : tw])
+        return [row]
+    }
+    row := [], used := 0
+    for i, w in need {
+        if (row.Length && used + w + gap > room) {
+            rows.Push(row), row := [], used := 0
+        }
+        row.Push([i, w]), used += w + gap
+    }
+    rows.Push(row)
+    for row in rows {  ; used includes one gap too many: the slack is shared out
+        sum := 0
+        for tab in row
+            sum += tab[2] + gap
+        extra := room + gap - sum, each := extra // row.Length
+        for j, tab in row
+            tab[2] += each + ((j = row.Length) ? extra - each * row.Length : 0)
+    }
+    return rows
 }
 
 ; Round when square, a pill when longer one way; the plain round button when the grid is off.

@@ -1,6 +1,6 @@
-; Reading layouts.txt into layouts: every button gets a spot and a size. No windows here, so tests can include it alone.
+; Reading the layouts file (ButtonsFile) into layouts: every button gets a spot and a size. No windows here, so tests can include it alone.
 
-; Layouts of layouts.txt, each {name, cols, rows, items, off}. Every item has a spot (col, row, 0-based)
+; Layouts of the layouts file, each {name, cols, rows, items, off}. Every item has a spot (col, row, 0-based)
 ; and a size (w, h) in tiles; "off" holds buttons that did not fit the grid. Bad lines are skipped and named.
 ; LoadSkipped counts the skipped lines and LoadNotes the notes below the top block:
 ; WriteButtonsFile does not keep either.
@@ -12,7 +12,7 @@ LoadButtons() {
         ButtonsTime := FileGetTime(ButtonsFile, "M")
         text := FileRead(ButtonsFile, "UTF-8")
     } catch {
-        TrayTip("No layouts.txt found", "TouchDock")
+        TrayTip("No " LayoutsName() " found", "TouchDock")
         return layouts
     }
     for n, line in StrSplit(text, "`n", "`r") {
@@ -58,7 +58,7 @@ LoadButtons() {
         s := ""
         for n in bad
             s .= (s = "" ? "" : ", ") n
-        TrayTip("layouts.txt: skipped line " s, "TouchDock")
+        TrayTip(LayoutsName() ": skipped line " s, "TouchDock")
     }
     NameLayouts(layouts)
     for l in layouts
@@ -83,7 +83,7 @@ NameLayouts(layouts) {
         seen[name] := true, l.name := name
     }
     if (renamed != "")
-        TrayTip("layouts.txt: same name twice, renamed: " renamed, "TouchDock")
+        TrayTip(LayoutsName() ": same name twice, renamed: " renamed, "TouchDock")
 }
 
 ; Label | kind | what, then any of: an icon code, "at C,R", "size WxH", "repeat on/off".
@@ -294,4 +294,10 @@ CloneLayouts(ls) {
         out.Push({name: l.name, cols: l.cols, rows: l.rows, items: items, off: off})
     }
     return out
+}
+
+; The layouts file's own name for messages: default-layouts.txt when run from source, layouts.txt otherwise.
+LayoutsName() {
+    SplitPath(ButtonsFile, &name)
+    return name
 }

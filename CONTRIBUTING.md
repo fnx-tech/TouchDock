@@ -28,9 +28,10 @@ Paste the layout's section of `layouts.txt` (from its `[Name]` line down) in an 
 ## Building the release files
 
 `build/build.sh` (from WSL, on the Windows PC; `build/build.ps1` does the same from PowerShell) compiles `dist\TouchDock.exe` with Ahk2Exe and writes
-`dist\TouchDock-v<version>-portable.zip` and `dist\TouchDock-v<version>-setup.exe`. It needs AutoHotkey v2 with
+`dist\TouchDock-v<version>-portable.zip` and `dist\TouchDock-v<version>-setup.exe`. It also writes a `.sha256` file next to the setup and the zip; upload all four files with each release, because
+"Update Now" refuses an installer whose `-setup.exe.sha256` asset is missing or does not match. It needs AutoHotkey v2 with
 Ahk2Exe and Inno Setup 6. The installer is `installer\touchdock.iss`; the version is set there and in `AppVersion` at the top of `touchdock.ahk`, and the build stops if they differ. The exe carries
-`layouts.txt` and `click.wav` (FileInstall) and writes them to its data folder when missing.
+`default-layouts.txt` and `click.wav` (FileInstall) and writes them to its data folder (as `layouts.txt` and `click.wav`) when missing. Run from source, the editor and "Edit layout (text file)" change `default-layouts.txt` itself (`SourceEditsDefaultLayouts` in `touchdock.ahk`), so what you save is what ships.
 
 ## Tests
 

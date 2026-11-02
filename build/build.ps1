@@ -72,5 +72,11 @@ if ($isccProc.ExitCode -ne 0) {
     throw "Inno Setup compilation failed with exit code $($isccProc.ExitCode)"
 }
 
+# "<hash>  <file name>", which the updater checks the downloaded installer against; upload them with each release.
+foreach ($name in "TouchDock-v$Version-setup.exe", "TouchDock-v$Version-portable.zip") {
+    $hash = (Get-FileHash -Path (Join-Path $Dist $name) -Algorithm SHA256).Hash.ToLower()
+    [System.IO.File]::WriteAllText((Join-Path $Dist "$name.sha256"), "$hash  $name`n", (New-Object System.Text.UTF8Encoding($false)))
+}
+
 Write-Host "Build complete! Artifacts in dist:" -ForegroundColor Green
 Get-ChildItem -Path $Dist | Select-Object Name, Length, LastWriteTime

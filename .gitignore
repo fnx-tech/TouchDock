@@ -1,6 +1,7 @@
 # Each user's own settings, log and editor backup (created on first run / first save)
 touchdock.ini
 layouts.bak
+/layouts.txt
 
 # Test leftovers
 tests/out/

@@ -1,5 +1,5 @@
 ; editor-test.ahk : drives the layout editor without the mouse. Copied next to touchdock.ahk as
-; zz-editor-test.ahk by editor-test.sh (so the script's own paths work), on a copy of layouts.txt.
+; zz-editor-test.ahk by editor-test.sh (so the script's own paths work), on a copy of editor-fixture.txt.
 #Include %A_ScriptDir%\touchdock.ahk
 OnError((e, *) => (FileAppend("ERROR: " e.Message " (" e.What ", " e.File ":" e.Line ")`n", "*"), ExitApp(2)))
 Say(s) => FileAppend(s "`n", "*")
@@ -104,5 +104,17 @@ PushUndo()
 EditLayouts.Push({name: "Second", cols: 6, rows: 4, items: [], off: []}), LayoutName := "Second", EditLayouts.RemoveAt(1)
 EditUndoStep()
 Check("undo goes back to the layout you were on (" LayoutName ")", LayoutName = start)
+PushUndo()
+loop 11
+    EditLayouts.Push({name: "Layout number " A_Index, cols: 6, rows: 4, items: [], off: []})
+BuildBar()
+ys := Map(), narrow := 0, over := 0
+for h, t in TileOf
+    if (t[1].kind = "tab") {
+        t[2][1].GetPos(&tx, &ty, &tw)
+        ys[ty] := true, narrow += (tw < G.s), over += (tx + tw > BarW)
+    }
+Check("12 layouts: " ys.Count " tab rows, none narrower than a tile (" narrow ") or past the grid (" over ")", ys.Count >= 2 && narrow = 0 && over = 0 && G.tabRows = ys.Count)
+EditUndoStep()
 EditCancel()
 ExitApp()

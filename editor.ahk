@@ -1,5 +1,5 @@
 ; The layout editor for the grid around the mic button. Included by touchdock.ahk, which owns the globals.
-; Edit mode works on a copy of the layouts (EditLayouts): Done writes it to layouts.txt, Cancel drops it.
+; Edit mode works on a copy of the layouts (EditLayouts): Done writes it to the layouts file, Cancel drops it.
 ; While editing, the mic button is hidden and drawn as a tile in the grid, and the grid stays at EditPos.
 
 StartEdit() {
@@ -11,7 +11,7 @@ StartEdit() {
     if !ShowBar
         ToggleBar()
     if !Bar
-        return TrayTip("No buttons to edit: check layouts.txt", "TouchDock")
+        return TrayTip("No buttons to edit: check " LayoutsName(), "TouchDock")
     WinGetPos(&x, &y, , , Bar)
     EditPos := [x, y], EditStartLayout := LayoutName
     EditLayouts := LoadButtons(), EditUndo := []
@@ -32,7 +32,7 @@ EditDone() {
         what := EditDropped.lines " line(s) that could not be read"
     if EditDropped.notes
         what .= (what = "" ? "" : " and ") EditDropped.notes " note(s) below the top block"
-    if (what != "" && Confirm("layouts.txt has " what ". Saving drops them (the old file is kept as layouts.bak).`n`nSave anyway?") != "Yes")
+    if (what != "" && Confirm(LayoutsName() " has " what ". Saving drops them (the old file is kept as layouts.bak).`n`nSave anyway?") != "Yes")
         return
     WriteButtonsFile(EditLayouts, BackupFile)
     IniWrite(LayoutName, IniFile, "look", "layout")
@@ -276,10 +276,10 @@ EditWhat(k) {
     SetField(k, "what", v)
 }
 
-; | separates the fields of a line in layouts.txt, and a name starting with # would read back as a note.
+; | separates the fields of a line in the layouts file, and a name starting with # would read back as a note.
 BadText(v, isName := false) {
     if InStr(v, "|")
-        Refuse("A | cannot be used here: it separates the fields in layouts.txt")
+        Refuse("A | cannot be used here: it separates the fields in " LayoutsName())
     else if (isName && SubStr(v, 1, 1) = "#")
         Refuse("A name cannot start with #: give it a name of its own")
     else

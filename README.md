@@ -76,7 +76,7 @@ Then:
 2. **Tabs:** tap to switch layout; press and slide on a tab to move the dock.
 3. **Edit the layouts:** menu > "Edit layout (drag and drop)". Tap Done to save, Cancel to drop the changes.
    The previous layouts file is kept as `layouts.bak`.
-4. **By hand:** menu > "Edit layout (text file)". The notes at the top of `layouts.txt` explain every option.
+4. **By hand:** menu > "Edit layout (text file)". The notes at the top of the layouts file (`layouts.txt` in your data folder) explain every option.
 5. **Touchpad speed:** menu > Touchpad speed > Slow / Normal / Fast.
 6. **If something looks wrong:** right-click menu or tray icon > Restart TouchDock.
 
@@ -92,19 +92,19 @@ Then:
 | File | What it is |
 |---|---|
 | `touchdock.ahk` | the program: mic, menu, settings |
-| `layouts.ahk` | reads and writes `layouts.txt` |
+| `layouts.ahk` | reads and writes the layouts file |
 | `grid.ahk` | draws the grid and presses the keys |
 | `editor.ahk` | the layout editor |
 | `touchpad.ahk` | the touchpad and its pointer |
 | `updater.ahk` | the daily and manual check for a new release (menu > Check for updates) |
-| `layouts.txt` | the layouts (edit on screen or by hand) |
+| `default-layouts.txt` | the layouts that ship with TouchDock (edit on screen or by hand) |
 | `click.wav` | the key click |
 | `installer\`, `build\` | the installer script and the scripts (`build.sh`, `build.ps1`) that build the release files |
 | `tests\` | test scripts (see [CONTRIBUTING.md](CONTRIBUTING.md)) |
 
-Your own settings (`touchdock.ini`) and editor backup (`layouts.bak`) are created
+Your own layouts (`layouts.txt`, started from `default-layouts.txt` when missing and never overwritten), settings (`touchdock.ini`) and editor backup (`layouts.bak`) are created
 in the data folder (the repository folder from source, the exe folder for the portable zip, `%APPDATA%\TouchDock`
-when installed) and are not part of the repository.
+when installed) and are not part of the repository. Run from source, the editor and "Edit layout (text file)" change `default-layouts.txt` itself.
 
 ## Contributing
 

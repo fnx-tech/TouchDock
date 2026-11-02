@@ -5,13 +5,13 @@
 AppVersion   := "1.1"
 HandyExe     := EnvGet("LOCALAPPDATA") "\Handy\handy.exe"
 HandySettings := EnvGet("APPDATA") "\com.pais.handy\settings_store.json"
-; Where touchdock.ini, layouts.txt, layouts.bak and click.wav live: the script folder when run from source or
+; Where touchdock.ini, layouts.txt, layouts.bak and click.wav live (from source, the shipped default-layouts.txt too): the script folder when run from source or
 ; next to a "portable" file, else the user's AppData (installed in Program Files, which is not writable).
 DataDir := (!A_IsCompiled || FileExist(A_ScriptDir "\portable")) ? A_ScriptDir : EnvGet("APPDATA") "\TouchDock"
 DirCreate(DataDir)
 if A_IsCompiled {  ; the exe carries its starting files; a user's own copy is never overwritten
     if !FileExist(DataDir "\layouts.txt")
-        FileInstall("layouts.txt", DataDir "\layouts.txt")
+        FileInstall("default-layouts.txt", DataDir "\layouts.txt")
     if !FileExist(DataDir "\click.wav")
         FileInstall("click.wav", DataDir "\click.wav")
 }
@@ -52,7 +52,12 @@ Engine    := HandyInstalled ? IniRead(IniFile, "engine", "name", "handy") : "win
 ShowBar   := IniRead(IniFile, "look", "editbar", "1") = "1"
 
 ; Edit buttons around the mic button, one per line of layouts.txt (format in that file).
-ButtonsFile := DataDir "\layouts.txt"
+; From source, the editor and "Edit layout (text file)" change default-layouts.txt itself, the file that ships.
+; Set to false to work on a personal layouts.txt in the script folder instead (copied from the default when missing).
+SourceEditsDefaultLayouts := true
+ButtonsFile := (!A_IsCompiled && SourceEditsDefaultLayouts) ? A_ScriptDir "\default-layouts.txt" : DataDir "\layouts.txt"
+if (!A_IsCompiled && !FileExist(ButtonsFile))
+    try FileCopy(A_ScriptDir "\default-layouts.txt", ButtonsFile)
 ClickSound := DataDir "\click.wav"
 TileColor := "333333", TilePressed := "1C5FC4", EnterColor := "1F4E8C"
 Bar := "", BarW := 0, BarH := 0, BarIcons := [], MicAt := "", MicW := 0, MicH := 0, ButtonsTime := "", NextKey := ""
